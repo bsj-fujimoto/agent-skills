@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{
+  --bg:#f7f7f5; --panel:#fff; --ink:#1a1a1a; --sub:#6b6b6b; --line:#e3e3df;
+  --ubg:#eef2ff; --uline:#dbe3ff; --uink:#152a63;
+  --abg:#f0fdf4; --aline:#d3f0dd; --aink:#123a22;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  line-height:1.85;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 100px}
+
+.hero{padding:64px 0 40px;text-align:center}
+.hero .eyebrow{font-size:13px;letter-spacing:.14em;color:var(--sub);font-weight:700}
+.hero h1{font-size:clamp(28px,5vw,46px);line-height:1.3;margin:14px 0 18px;letter-spacing:-.02em}
+.hero p{font-size:clamp(15px,2.2vw,18px);color:var(--sub);margin:0 auto;max-width:660px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:32px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 20px;min-width:110px}
+.stat b{display:block;font-size:24px;line-height:1.2}
+.stat span{font-size:12px;color:var(--sub)}
+
+h2{font-size:clamp(21px,3.4vw,28px);margin:0 0 8px;letter-spacing:-.01em}
+.lead{color:var(--sub);margin:0 0 28px;font-size:15px}
+section{margin-top:72px}
+.sec-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.12em;
+  color:#fff;background:var(--ink);border-radius:5px;padding:3px 9px;margin-bottom:12px}
+
+.flow{display:grid;gap:14px}
+.step{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--c);
+  border-radius:14px;padding:20px 22px;display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start}
+.step .num{width:44px;height:44px;border-radius:11px;background:var(--c);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+.step h3{margin:0 0 2px;font-size:19px}
+.step .when{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px}
+.step .what{font-size:15.5px;font-weight:600;margin:0 0 8px}
+.step .detail{font-size:14px;color:#4a4a4a;margin:0}
+.arrow{text-align:center;color:#c3c3bd;font-size:20px;line-height:1;margin:-6px 0}
+
+.loop{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 24px;margin-top:26px}
+.loop h3{margin:0 0 4px;font-size:18px}
+.loop>p{margin:0 0 22px;color:var(--sub);font-size:14px}
+.ring{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.node{flex:1 1 150px;background:#fafaf8;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.node .ic{font-size:22px}
+.node b{display:block;font-size:14px;margin:6px 0 4px}
+.node span{font-size:12px;color:var(--sub);line-height:1.6;display:block}
+.node.back{background:#fff7ed;border-color:#fed7aa}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 26px;position:sticky;top:0;
+  background:linear-gradient(var(--bg) 70%,rgba(247,247,245,0));padding:14px 0;z-index:5}
+.fbtn{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 14px;
+  font-size:13px;font-weight:700;cursor:pointer;color:var(--sub);font-family:inherit}
+.fbtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.fbtn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+.tl{position:relative;padding-left:34px}
+.tl::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.turn{position:relative;margin-bottom:26px}
+.turn::before{content:"";position:absolute;left:-28px;top:20px;width:12px;height:12px;border-radius:50%;
+  background:var(--c);border:3px solid var(--bg)}
+.turn .head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.badge{font-size:11px;font-weight:800;color:#fff;background:var(--c);border-radius:5px;padding:2px 8px}
+.time{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.tool{font-size:11px;color:var(--sub);background:var(--panel);border:1px solid var(--line);
+  border-radius:5px;padding:2px 7px}
+.bubble{border-radius:14px;padding:15px 18px;font-size:14.5px}
+.bubble .who{font-size:11px;font-weight:800;letter-spacing:.08em;margin-bottom:5px;opacity:.75}
+.bu{background:var(--ubg);border:1px solid var(--uline);color:var(--uink);margin-bottom:8px}
+.ba{background:var(--abg);border:1px solid var(--aline);color:var(--aink)}
+.turn.pivot .bu{box-shadow:0 0 0 3px #fde68a}
+.pivot-tag{font-size:11px;font-weight:800;color:#92400e;background:#fef3c7;
+  border:1px solid #fde68a;border-radius:5px;padding:2px 8px}
+
+.note{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 18px;font-size:14px;margin-top:20px}
+footer{margin-top:80px;padding-top:24px;border-top:1px solid var(--line);color:var(--sub);font-size:12.5px;text-align:center}
+
+@media(max-width:600px){
+  .step{grid-template-columns:1fr;gap:10px}
+  .step .num{width:38px;height:38px;font-size:15px}
+  .tl{padding-left:26px}
+  .tl::before{left:7px}
+  .turn::before{left:-25px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <div class="eyebrow">__EYEBROW__</div>
+  <h1>__HEADLINE__</h1>
+  <p>__SUBHEAD__</p>
+  <div class="stats" id="stats"></div>
+</div>
+
+<section>
+  <span class="sec-tag">WORKFLOW</span>
+  <h2>要するに、どういう順番で進めた？</h2>
+  <p class="lead" id="flow-lead"></p>
+  <div class="flow" id="flow"></div>
+
+  <div class="loop" id="loop-box">
+    <h3 id="loop-title"></h3>
+    <p id="loop-lead"></p>
+    <div class="ring" id="ring"></div>
+  </div>
+
+  <div class="note" id="insight"></div>
+</section>
+
+<section>
+  <span class="sec-tag">TIMELINE</span>
+  <h2>実際のやり取り</h2>
+  <p class="lead" id="tl-lead"></p>
+  <div class="filters" id="filters"></div>
+  <div class="tl" id="tl"></div>
+</section>
+
+<footer id="foot"></footer>
+</div>
+
+<script>
+/* __DATA__ */
+</script>
+
+<script>
+(function(){
+  var D = window.RECAP, PH = {};
+  D.phases.forEach(function(p){ PH[p.id] = p; });
+
+  function esc(s){
+    return String(s).replace(/[&<>]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];
+    });
+  }
+
+  document.getElementById('stats').innerHTML = D.stats.map(function(x){
+    return '<div class="stat"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>';
+  }).join('');
+
+  document.getElementById('flow-lead').textContent = D.text.flowLead;
+  document.getElementById('tl-lead').textContent = D.text.timelineLead;
+  document.getElementById('insight').innerHTML = D.text.insight;
+  document.getElementById('foot').innerHTML = D.text.footer;
+
+  document.getElementById('flow').innerHTML = D.phases.map(function(p,i){
+    return (i ? '<div class="arrow">▼</div>' : '') +
+    '<div class="step" style="--c:'+esc(p.color)+'">'+
+      '<div class="num">'+(i+1)+'</div>'+
+      '<div><h3>'+esc(p.name)+'</h3>'+
+      '<div class="when">'+esc(p.when)+'</div>'+
+      '<p class="what">'+esc(p.what)+'</p>'+
+      '<p class="detail">'+esc(p.detail)+'</p></div>'+
+    '</div>';
+  }).join('');
+
+  var box = document.getElementById('loop-box');
+  if (D.loop && D.loop.steps && D.loop.steps.length) {
+    document.getElementById('loop-title').textContent = D.loop.title;
+    document.getElementById('loop-lead').textContent = D.loop.lead;
+    document.getElementById('ring').innerHTML = D.loop.steps.map(function(l,i){
+      var last = (i === D.loop.steps.length - 1);
+      return '<div class="node'+(last?' back':'')+'">'+
+        '<div class="ic">'+esc(l.icon)+'</div>'+
+        '<b>'+(i+1)+'. '+esc(l.title)+'</b>'+
+        '<span>'+esc(l.desc)+'</span></div>';
+    }).join('');
+  } else {
+    box.hidden = true;
+  }
+
+  var f = document.getElementById('filters');
+  f.innerHTML = '<button class="fbtn" data-p="all" aria-pressed="true">すべて</button>' +
+    D.phases.map(function(p,i){
+      return '<button class="fbtn" data-p="'+esc(p.id)+'" aria-pressed="false">'+
+        '<span class="dot" style="background:'+esc(p.color)+'"></span>'+
+        (i+1)+'. '+esc(p.name)+'</button>';
+    }).join('');
+
+  document.getElementById('tl').innerHTML = D.turns.map(function(t){
+    var p = PH[t.phase] || {name:'その他', color:'#9ca3af'};
+    var meta = '';
+    if (t.tools)  meta += '<span class="tool">'+t.tools+' コマンド</span>';
+    if (t.agents) meta += '<span class="tool">別AIに '+t.agents+' 件委譲</span>';
+    if (t.pivot)  meta += '<span class="pivot-tag">転換点</span>';
+    return '<div class="turn'+(t.pivot?' pivot':'')+'" data-p="'+esc(t.phase)+'" '+
+             'style="--c:'+esc(p.color)+'">'+
+      '<div class="head"><span class="badge">'+esc(p.name)+'</span>'+
+        '<span class="time">#'+t.n+' · '+esc(t.ts)+'</span>'+meta+'</div>'+
+      '<div class="bubble bu"><div class="who">人間</div>'+esc(t.user)+'</div>'+
+      '<div class="bubble ba"><div class="who">AI</div>'+esc(t.ai)+'</div>'+
+    '</div>';
+  }).join('');
+
+  f.addEventListener('click', function(e){
+    var b = e.target.closest('.fbtn');
+    if (!b) return;
+    var v = b.dataset.p;
+    Array.prototype.forEach.call(f.querySelectorAll('.fbtn'), function(x){
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.turn'), function(t){
+      t.hidden = !(v === 'all' || t.dataset.p === v);
+    });
+  });
+})();
+</script>
+</body>
+</html>
