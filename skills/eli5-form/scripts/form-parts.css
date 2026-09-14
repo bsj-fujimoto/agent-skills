@@ -1,0 +1,102 @@
+/* eli5-form の見た目パーツ（動作実績のあるコードをそのまま抜き出したもの）
+ *
+ * 前提の CSS 変数: --ink 文字色 / --sub 補助色 / --line 罫線 / --ac アクセント
+ *                  --ok 成功 / --oksoft 成功の淡色 / --ng エラー / --ngsoft エラーの淡色
+ *
+ * 要点:
+ *  - .ni に color を明示している。<button> の既定色だと文字が見えなくなるため
+ *  - .dots は content を固定し clip-path で隠す。content を差し替えると幅が変わる。
+ *    @keyframes d は 1個→2個→3個 で回し、0個の状態を作らない（消えるとチラつく）
+ *  - 通知はスクロール追従（position:sticky / fixed）で積んだまま残す。snackbar にしない
+ */
+
+/* 通知を積む入れ物。position:fixed でスクロールに追従させ、
+   回答が届いた順に縦に積んだまま残す（snackbar のように消さない）。
+   狭い画面では本文の上に流し込む */
+#nlist{position:fixed;right:16px;top:16px;width:252px;z-index:40;
+    display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 32px);
+    overflow-y:auto;pointer-events:none}
+
+#nlist:empty{display:none}
+
+@media(max-width:1400px){#nlist{width:210px}}
+
+@media(max-width:1100px){#nlist{position:static;width:auto;max-height:none;
+    margin:0 0 16px;flex-direction:row;flex-wrap:wrap}
+    .ni{width:auto;max-width:100%}}
+
+/* 「...」は常に3文字ぶんの幅を確保し、見え方だけ変える
+     （content を差し替えると幅が動いて要素の高さが揺れるため） */
+  .qa.dots::after,.dots::after{content:'...';letter-spacing:1px;
+    animation:d .9s steps(1,end) infinite}
+
+@keyframes d{
+    0%,100%{clip-path:inset(0 66% 0 0)}  /* . */
+    33%{clip-path:inset(0 33% 0 0)}      /* .. */
+    66%{clip-path:inset(0 0 0 0)}        /* ... */
+  }
+
+.qa.dots::after{display:inline-block;vertical-align:bottom}
+
+.ni{pointer-events:auto;position:relative;display:flex;gap:10px;align-items:flex-start;
+    text-align:left;background:#fff;color:var(--ink);
+    border:1px solid var(--line);border-left:4px solid var(--sub);
+    border-radius:12px;padding:10px 30px 10px 13px;cursor:pointer;font-family:inherit;
+    box-shadow:0 3px 14px rgba(16,20,30,.13);transition:.18s;width:100%}
+
+.ni:hover{transform:translateX(-3px);box-shadow:0 5px 20px rgba(16,20,30,.2)}
+
+.nx{position:absolute;right:5px;top:5px;width:21px;height:21px;border:0;
+    background:transparent;color:var(--sub);border-radius:6px;cursor:pointer;
+    font-size:14px;line-height:1;display:grid;place-items:center;padding:0;
+    font-family:inherit;opacity:.55;transition:.15s}
+
+.nx:hover{opacity:1;background:rgba(0,0,0,.08);color:var(--ink)}
+
+.ni.wait{border-left-color:var(--ac)}
+
+.ni.done{border-left-color:var(--ok);background:var(--oksoft)}
+
+.ni.err{border-left-color:var(--ng);background:var(--ngsoft)}
+
+.ni .ic{flex:none;font-size:15px;line-height:1.4}
+
+.ni .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+
+.ni .tx b{font-size:12.6px;font-weight:800;line-height:1.45;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.ni.done .tx b{color:#065f46}
+
+.ni.err .tx b{color:#991b1b}
+
+.ni .st{font-size:11.3px;color:var(--sub)}
+
+.ni.done .st{color:var(--ok);font-weight:700}
+
+.ni.err .st{color:var(--ng);font-weight:700}
+
+.ni.new{animation:pop .45s ease}
+
+@keyframes pop{0%{transform:scale(.94);opacity:.4}100%{transform:scale(1);opacity:1}}
+
+.sp{display:inline-block;width:11px;height:11px;border:2px solid var(--line);
+    border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite}
+
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.mi.hl{box-shadow:0 0 0 3px rgba(79,70,229,.35)}
+
+.qa.dots .bd{display:none}
+
+/* 質問欄。<input> ではなく <textarea> にする（改行できるように）。
+   resize:none で、高さは bindAsk() が中身に合わせて伸ばす（最大160px） */
+.askrow textarea{flex:1;resize:none;min-height:38px;max-height:160px;
+    line-height:1.6;overflow-y:auto;font-family:inherit}
+
+/* 送信キーの案内。Enter=改行 / Ctrl+Enter=送信 を明示しないと
+   「送れない」と受け取られる（Enterで送る前提の人がいるため） */
+.askhint{font-size:11.2px;color:var(--sub);margin-top:5px}
+
+.askhint kbd{background:#f1f5f9;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:4px;padding:0 5px;font-size:10.6px;font-family:inherit;color:var(--ink)}

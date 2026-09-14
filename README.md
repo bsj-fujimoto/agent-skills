@@ -11,12 +11,12 @@ npx skills add bsj-fujimoto/agent-skills
 スキルを選んで入れる場合:
 
 ```bash
-npx skills add bsj-fujimoto/agent-skills --skill session-recap
+npx skills add bsj-fujimoto/agent-skills --skill eli5-form
 ```
 
 グローバル（ユーザー全体）に入れる場合は `-g` を付ける。
 
-### `/session-recap` が Unknown command になったら
+### スラッシュコマンドが Unknown command になったら
 
 原因は2つ考えられる。**上から順に試す。**
 
@@ -35,7 +35,7 @@ npx skills add bsj-fujimoto/agent-skills -g --copy
 ただし環境によっては、その形だとスキルとして拾われないことがある。
 
 ```bash
-ls -la ~/.claude/skills/session-recap   # symlink かどうか
+ls -la ~/.claude/skills/<スキル名>   # symlink かどうか
 ```
 
 symlink で動いている実績が手元に無いなら、`--copy` のほうが確実。
@@ -106,6 +106,52 @@ HTMLを作る作業そのものがそのセッションのログに残る。
 （72ターンのセッションで19万字）ので、対話の続きに使うコンテキストを食い潰す。
 別のセッションをまとめるなら、その19万字を手元に入れる理由がない。
 サブエージェントのログは完全に別ファイルで、親には段階のリストだけが返る。
+
+### eli5-form
+
+確認したい論点を「**そのまま回答できるフォーム**」にした HTML を作る。
+各項目に出典・図・AI推奨を付け、選択肢と自由記述で答えてもらう。
+分からない項目は**その場で Claude に聞ける**。
+
+説明して終わる `eli5` との違いは、**回答を受け取るのが目的**である点。
+設計の不明点を洗い出したいとき、仕様の未決事項を潰したいとき、
+レビュー依頼のシートを作るときに使う。
+
+```bash
+/eli5-form <論点のトピック>
+```
+
+回答は localStorage に自動保存され、「決定として保存」で**凍結版 HTML** に落ちる。
+論点の本文・出典・図・AI の見立て・回答・Claude とのやり取りが見た目のまま入り、
+回答 JSON も `<script type="application/json">` に埋め込まれる。
+**HTML 1枚を配ればデータも一緒に渡る。**
+
+**Claude への質問を動かすには**、ページと同じポートに小さなローカルサーバーを立てる。
+
+```bash
+cd <リポジトリ>   # ← ここが claude の作業ディレクトリになる
+python3 skills/eli5-form/scripts/server.py --ensure   --port 8899 --dir <htmlのある場所> --session <セッションID> --save-dir <保存先>
+```
+
+`--resume <セッションID> --fork-session` で `claude -p` を呼ぶので、
+**資料を作った文脈をそのまま持ったまま**答えつつ、元のセッションは汚さない。
+
+| | 役割 |
+|---|---|
+| `scripts/server.py` | 静的配信と `/ask` `/save` `/health` を同じポートで処理 |
+| `scripts/form-parts.js` | 通知スタック・Markdown 描画・凍結版の書き出し・IME 対応の送信 |
+| `scripts/form-parts.css` | 通知と待機表示の見た目 |
+
+**立てっぱなしにならない。** 既定 30 分やりとりが無ければ自分で終了し、
+ページが開いている間は心拍（`/health?ping=1`）で生き続ける。
+`--ensure` は既に居れば使い回し、`--status` で動いているものを一覧できる。
+ポートが埋まっていれば自動で次の空きへ上がる（移ったことは警告で知らせる）。
+
+**ブラウザからサーバーを自動起動することはできない**（ページにプロセス起動の手段が
+無く、そもそもページ自体をサーバーが配っている）。届かなかったときは、
+そのまま打てる復帰コマンドを画面に出す。
+
+**必要なもの**: Python 3 / `claude` コマンド（質問機能を使う場合）
 
 ## ライセンス
 
