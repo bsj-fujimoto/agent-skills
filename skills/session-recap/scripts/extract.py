@@ -1,22 +1,36 @@
 #!/usr/bin/env python3
-"""セッションログ(.jsonl)から、人間の発言とAIの応答をターン単位で抽出する。
+"""エージェントのセッションログから、人間の発言とAIの応答をターン単位で抽出する。
 
 使い方:
-    python3 extract.py <session-id | jsonl path> [出力先.json]
+    python3 extract.py <セッションID | ログのパス> [出力先.json]
+    python3 extract.py --list                 # 見つかるログを新しい順に一覧
+    python3 extract.py --list --all-agents    # 対応エージェントすべてを探す
 
-出力(JSON): {"meta": {...}, "turns": [{"n","ts","user","ai","tools","agents"}, ...]}
+出力(JSON): {"meta": {...}, "turns": [{"n","ts","user","kind","ai","tools","agents"}]}
   - user : 実際に人間が打った内容（スキル本文の展開・システム注入は除去済み）
   - ai   : そのターンでAIが返したテキストを " / " で連結したもの
-  - tools: ツール実行回数
-  - agents: サブエージェント委譲回数
+  - tools: ツール実行回数 / agents: サブエージェント委譲回数
+
+対応形式は「中身を見て」判定する。エージェント名では分岐しない
+（同じエージェントでも複数の形式を書くため）。未知の形式は --format で足せる。
 """
+import glob
 import json
 import os
 import re
 import sys
-import glob
 
-PROJECTS = os.path.expanduser("~/.claude/projects")
+HOME = os.path.expanduser("~")
+
+# ログの置き場。実在するものだけを探す。
+# 「1ファイル=1セッション」の形式のみを対象にする（コマンド履歴などは対象外）。
+SEARCH_PATHS = [
+    ("claude",   os.path.join(HOME, ".claude/projects/*/*.jsonl")),
+    ("codex",    os.path.join(HOME, ".codex/sessions/**/*.jsonl")),
+    ("opencode", os.path.join(HOME, ".local/share/opencode/**/*.json")),
+    ("gemini",   os.path.join(HOME, ".gemini/tmp/**/*.json")),
+    ("copilot",  os.path.join(HOME, ".copilot/history-session-state/*.json")),
+]
 
 # 人間の入力ではない、システム側が注入するもの
 NOISE_PREFIXES = (
@@ -32,36 +46,142 @@ NOISE_PATTERNS = (
 )
 
 
-def find_log(arg):
-    """セッションIDまたはパスから .jsonl を見つける。"""
-    if os.path.isfile(arg):
-        return arg
+def die(msg):
+    sys.exit(msg)
 
-    if not os.path.isdir(PROJECTS):
-        sys.exit(
-            f"セッションログの置き場が見つかりません: {PROJECTS}\n"
-            "このスキルは Claude Code のログ形式（1行1JSONの .jsonl）を前提にしています。\n"
-            "他のエージェントで使う場合は、同じ形式のログのパスを直接渡してください。"
-        )
 
-    hits = glob.glob(os.path.join(PROJECTS, "*", f"{arg}*.jsonl"))
-    if not hits:
-        sys.exit(
-            f"セッションログが見つかりません: {arg}\n"
-            f"探した場所: {PROJECTS}/*/\n"
-            "セッションIDは部分一致でも指定できます。一覧は次で確認できます:\n"
-            f"  ls -t {PROJECTS}/*/*.jsonl | head"
-        )
-    # 同名が複数あるときは最大のものを使う（本体である可能性が高い）
-    return max(hits, key=os.path.getsize)
+# --------------------------------------------------------------------------
+# 読み込み: ファイル → レコードの並び
+# --------------------------------------------------------------------------
+
+def load_records(path):
+    """JSONL でも JSON でも、レコードの list にして返す。"""
+    raw = open(path, encoding="utf-8", errors="replace").read().strip()
+    if not raw:
+        die(f"ログが空です: {path}")
+
+    # まず JSONL として読む（1行1JSON）
+    if "\n" in raw:
+        recs, ok = [], 0
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                recs.append(json.loads(line))
+                ok += 1
+            except json.JSONDecodeError:
+                pass
+        # 半分以上が JSON として読めれば JSONL とみなす
+        if ok and ok >= len([l for l in raw.splitlines() if l.strip()]) / 2:
+            return recs
+
+    # 単一の JSON。会話配列がどこにあるか探す
+    try:
+        doc = json.loads(raw)
+    except json.JSONDecodeError as e:
+        die(f"JSON として読めません: {path}\n  {e}")
+
+    if isinstance(doc, list):
+        return doc
+    if isinstance(doc, dict):
+        for key in ("messages", "history", "turns", "events", "conversation", "entries"):
+            v = doc.get(key)
+            if isinstance(v, list) and v:
+                return v
+    die(
+        f"会話の配列が見つかりません: {path}\n"
+        "対応する形式は、1行1JSON か、messages/history/turns のいずれかを持つ JSON です。"
+    )
+
+
+# --------------------------------------------------------------------------
+# 正規化: レコード → {role, text, tool}
+# --------------------------------------------------------------------------
+
+def _text_from_content(content):
+    """content（文字列 / ブロック配列）から、本文とツール使用数を取り出す。"""
+    if isinstance(content, str):
+        return [content], 0, 0
+    texts, tools, agents = [], 0, 0
+    if isinstance(content, list):
+        for b in content:
+            if isinstance(b, str):
+                texts.append(b)
+                continue
+            if not isinstance(b, dict):
+                continue
+            bt = b.get("type")
+            if bt in ("text", "output_text", "input_text"):
+                t = b.get("text") or b.get("content") or ""
+                if isinstance(t, str) and t.strip():
+                    texts.append(t)
+            elif bt in ("tool_use", "tool_call", "function_call", "toolCall"):
+                tools += 1
+                name = b.get("name") or b.get("tool") or ""
+                if name in ("Agent", "Task", "subagent"):
+                    agents += 1
+    return texts, tools, agents
+
+
+def normalize(rec):
+    """1レコードを {role, texts, tools, agents, ts, skip} にそろえる。
+
+    どのキーに何が入っているかは形式ごとに違うので、ありうる置き場を順に見る。
+    該当しないレコードは None を返す。
+    """
+    if not isinstance(rec, dict):
+        return None
+
+    # サブエージェント内部の往復は本筋ではない（Claude）
+    if rec.get("isSidechain"):
+        return None
+
+    # 本体が入れ子になっている形式（Claude の message / Codex の payload）
+    inner = rec.get("message") if isinstance(rec.get("message"), dict) else None
+    if inner is None and isinstance(rec.get("payload"), dict):
+        inner = rec["payload"]
+
+    # 役割は role が最優先。type は role が無いときだけの代用
+    # （type:"message" のような入れ物の名前を役割と取り違えないため）
+    role = rec.get("role") or (inner or {}).get("role") or ""
+    if not role:
+        role = (inner or {}).get("type") or rec.get("type") or ""
+
+    role = str(role).lower()
+    if role in ("human", "user", "input"):
+        role = "user"
+    elif role in ("assistant", "ai", "model", "agent", "output"):
+        role = "assistant"
+    else:
+        return None
+
+    src = inner if inner is not None else rec
+    content = src.get("content")
+    if content is None:
+        content = src.get("parts")           # Gemini 系
+    if content is None:
+        content = src.get("text")            # 素朴な形式
+    if content is None:
+        return None
+
+    texts, tools, agents = _text_from_content(content)
+    ts = rec.get("timestamp") or rec.get("ts") or rec.get("createdAt") or ""
+    if isinstance(ts, (int, float)):
+        # ミリ秒/秒のエポックを ISO 風に
+        import datetime
+        sec = ts / 1000 if ts > 1e11 else ts
+        ts = datetime.datetime.fromtimestamp(sec).isoformat()
+
+    return {"role": role, "texts": texts, "tools": tools, "agents": agents, "ts": str(ts)}
 
 
 def clean_user_text(t):
     """人間の入力から、システム由来のノイズを取り除く。
 
-    戻り値: (表示用テキスト, 種別)  種別は "human" / "notification" / None(捨てる)
+    戻り値: (表示用テキスト, 種別)。種別は "human" / "notification"、捨てるなら (None, None)
     """
-    s = t.strip()
+    s = (t or "").strip()
     if not s:
         return None, None
     if s.startswith(NOISE_PREFIXES):
@@ -93,48 +213,94 @@ def clean_user_text(t):
     return (s, "human") if s else (None, None)
 
 
-def main():
-    if len(sys.argv) < 2:
-        sys.exit(__doc__)
-    path = find_log(sys.argv[1])
-    out = sys.argv[2] if len(sys.argv) > 2 else None
+# --------------------------------------------------------------------------
+# 探索
+# --------------------------------------------------------------------------
 
-    turns = []
-    cur = None
-    for line in open(path, encoding="utf-8"):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            d = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if d.get("type") not in ("user", "assistant"):
-            continue
-        # サブエージェント内部の往復は本筋ではないので除く
-        if d.get("isSidechain"):
-            continue
-
-        msg = d.get("message") or {}
-        content = msg.get("content")
-        blocks = [{"type": "text", "text": content}] if isinstance(content, str) else content
-        if not isinstance(blocks, list):
-            continue
-
-        for b in blocks:
-            if not isinstance(b, dict):
+def candidates(all_agents=False):
+    """実在するログを (更新時刻, パス, エージェント名) で新しい順に返す。"""
+    out = []
+    for name, pat in SEARCH_PATHS:
+        if not all_agents and name != "claude" and not os.path.isdir(
+            os.path.join(HOME, "." + name.split("/")[0])
+        ):
+            pass  # 実在チェックは glob 側に任せる
+        for p in glob.glob(pat, recursive=True):
+            try:
+                out.append((os.path.getmtime(p), p, name))
+            except OSError:
                 continue
-            bt = b.get("type")
+    out.sort(reverse=True)
+    return out
 
-            if d["type"] == "user":
-                if bt != "text":
-                    continue
-                text, kind = clean_user_text(b.get("text", ""))
+
+def find_log(arg, all_agents=False):
+    """セッションIDまたはパスから、ログのファイルを1つ決める。"""
+    if os.path.isfile(arg):
+        return arg
+
+    cands = candidates(all_agents=True)
+    if not cands:
+        die(
+            "セッションログが見つかりません。\n"
+            "探した場所:\n  " + "\n  ".join(p for _, p in
+                                            [(n, pat) for n, pat in SEARCH_PATHS]) + "\n"
+            "ログのパスを直接渡すこともできます。"
+        )
+
+    hits = [(m, p, a) for m, p, a in cands if arg in os.path.basename(p)]
+    if not hits:
+        near = "\n".join(f"  {a:9s} {p}" for _, p, a in cands[:5])
+        die(f"'{arg}' に一致するログがありません。\n直近のログ:\n{near}")
+
+    # 同じIDが複数あるときは、中身が多いものを本体とみなす
+    return max(hits, key=lambda x: os.path.getsize(x[1]))[1]
+
+
+def cmd_list(all_agents=False):
+    cands = candidates(all_agents=all_agents)
+    if not cands:
+        die("ログが見つかりませんでした。")
+    print(f"{'エージェント':10s} {'更新':16s} サイズ  パス")
+    import datetime
+    for mtime, path, agent in cands[:25]:
+        when = datetime.datetime.fromtimestamp(mtime).strftime("%m-%d %H:%M")
+        size = os.path.getsize(path)
+        unit = f"{size/1024/1024:.1f}M" if size > 1024 * 1024 else f"{size//1024}K"
+        print(f"{agent:10s} {when:16s} {unit:>6s}  {path}")
+
+
+# --------------------------------------------------------------------------
+
+def main():
+    args = [a for a in sys.argv[1:]]
+    if not args:
+        sys.exit(__doc__)
+
+    if "--list" in args:
+        cmd_list(all_agents="--all-agents" in args)
+        return
+
+    path = find_log(args[0])
+    out = args[1] if len(args) > 1 and not args[1].startswith("-") else None
+
+    records = load_records(path)
+
+    turns, cur, skipped = [], None, 0
+    for rec in records:
+        n = normalize(rec)
+        if n is None:
+            skipped += 1
+            continue
+
+        if n["role"] == "user":
+            for t in n["texts"]:
+                text, kind = clean_user_text(t)
                 if not text:
                     continue
                 cur = {
                     "n": len(turns) + 1,
-                    "ts": d.get("timestamp", ""),
+                    "ts": n["ts"],
                     "user": text,
                     "kind": kind,
                     "ai": [],
@@ -142,28 +308,34 @@ def main():
                     "agents": 0,
                 }
                 turns.append(cur)
-            else:
-                if cur is None:
-                    continue
-                if bt == "text":
-                    t = " ".join(b.get("text", "").split())
-                    if t:
-                        cur["ai"].append(t)
-                elif bt == "tool_use":
-                    cur["tools"] += 1
-                    if b.get("name") == "Agent":
-                        cur["agents"] += 1
+        else:
+            if cur is None:
+                continue
+            for t in n["texts"]:
+                t = " ".join(t.split())
+                if t:
+                    cur["ai"].append(t)
+            cur["tools"] += n["tools"]
+            cur["agents"] += n["agents"]
+
+    if not turns:
+        die(
+            f"会話が1件も取れませんでした: {path}\n"
+            f"（{len(records)} レコード中 {skipped} 件が対象外）\n"
+            "この形式には未対応かもしれません。数レコードを目視して、\n"
+            "役割と本文がどのキーに入っているか確認してください:\n"
+            f"  head -c 800 {path}"
+        )
 
     for t in turns:
         t["ai"] = " / ".join(t["ai"])
 
-    tools = sum(t["tools"] for t in turns)
     result = {
         "meta": {
             "log": path,
-            "session_id": os.path.basename(path).replace(".jsonl", ""),
+            "session_id": os.path.basename(path).rsplit(".", 1)[0],
             "turns": len(turns),
-            "tools": tools,
+            "tools": sum(t["tools"] for t in turns),
             "agents": sum(t["agents"] for t in turns),
             "start": turns[0]["ts"] if turns else "",
             "end": turns[-1]["ts"] if turns else "",

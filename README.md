@@ -48,11 +48,30 @@ npx skills add bsj-fujimoto/agent-skills --skill session-recap
 
 **必要なもの**: Python 3 / Node.js（`build.py` の自己チェックに使う。無ければ省略される）
 
-**対応エージェント**: `npx skills` が対応する全エージェント（Cursor / Codex / Gemini CLI /
-Copilot など）にインストールできるが、**ログの読み取りは Claude Code の形式**
-（`~/.claude/projects/*/<id>.jsonl`）**を前提**にしている。
-他エージェントで使う場合は、同じ「1行1JSON」形式のログのパスを直接渡す。
-段階分け・要約・HTML生成はエージェントに依存しない。
+**対応エージェント**: `npx skills` が対応する全エージェントにインストールできる。
+
+ログの読み取りは**エージェント名ではなく中身の構造で判定する**ので、
+形式が合えばそのまま動く。
+
+| | 対応 |
+|---|---|
+| 1行1JSON（JSONL） | ✅ |
+| 会話の配列を持つ単一JSON（`messages` / `history` / `turns` など） | ✅ |
+| Markdown形式のログ（Aider など） | ❌ |
+| SQLite | ❌ |
+
+役割（`role` / `type`）・本文（`content` / `parts` / `text`）・入れ子
+（`message` / `payload`）の書き方の違いは吸収する。詳しくは
+[log-formats.md](skills/session-recap/references/log-formats.md)。
+
+見つかるログの一覧:
+
+```bash
+python3 <スキルの場所>/scripts/extract.py --list
+```
+
+未知の形式に当たったときは、何レコードが対象外だったかを出して止まる。
+`normalize()` にキー名を1つ足すだけで対応できることが多い。
 
 ## ライセンス
 
