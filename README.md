@@ -48,30 +48,20 @@ npx skills add bsj-fujimoto/agent-skills --skill session-recap
 
 **必要なもの**: Python 3 / Node.js（`build.py` の自己チェックに使う。無ければ省略される）
 
-**対応エージェント**: `npx skills` が対応する全エージェントにインストールできる。
+**他のエージェントでも使える。** ログの読み出しは事前に用意したパーサーに頼らず、
+使う側のエージェントが自分のログを自分で読む方針にしている
+（場所と形式は本人が知っているし、知らなくても1回見れば分かる）。
+書き方と形式ごとの罠は
+[reading-logs.md](skills/session-recap/references/reading-logs.md)。
 
-ログの読み取りは**エージェント名ではなく中身の構造で判定する**ので、
-形式が合えばそのまま動く。
+`extract.py` は Claude Code の分だけの便宜ツール。
+これが有り難いのは形式を吸収するからではなく、**何を捨てるかを知っている**から
+（スキル本文の展開・システム注入・サブエージェント内部の往復など、
+人間が打っていないものが生ログには大量に混ざる）。
 
-| | 対応 |
-|---|---|
-| 1行1JSON（JSONL） | ✅ |
-| 会話の配列を持つ単一JSON（`messages` / `history` / `turns` など） | ✅ |
-| Markdown形式のログ（Aider など） | ❌ |
-| SQLite | ❌ |
-
-役割（`role` / `type`）・本文（`content` / `parts` / `text`）・入れ子
-（`message` / `payload`）の書き方の違いは吸収する。詳しくは
-[log-formats.md](skills/session-recap/references/log-formats.md)。
-
-見つかるログの一覧:
-
-```bash
-python3 <スキルの場所>/scripts/extract.py --list
-```
-
-未知の形式に当たったときは、何レコードが対象外だったかを出して止まる。
-`normalize()` にキー名を1つ足すだけで対応できることが多い。
+そして**短いセッションならログを読む必要すらない**。会話が全部見えているなら
+そのまま要約すればよく、ログを読むのは compact が起きたときや
+別のセッションをまとめるときだけ。
 
 ## ライセンス
 
