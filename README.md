@@ -16,6 +16,24 @@ npx skills add bsj-fujimoto/agent-skills --skill session-recap
 
 グローバル（ユーザー全体）に入れる場合は `-g` を付ける。
 
+**`--copy` を付けることを勧める。**
+
+```bash
+npx skills add bsj-fujimoto/agent-skills -g --copy
+```
+
+付けないと `~/.claude/skills/<名前>` がシンボリックリンクとして作られ、
+**Claude Code がスラッシュコマンドとして認識しないこと**がある
+（`/session-recap` が "Unknown command" になる）。
+`--copy` なら実ディレクトリとして置かれ、他のスキルと同じ扱いになる。
+
+`npx skills update` も方式を引き継がないことがあるので、
+更新後に `/xxx` が効かなくなったらここを疑う。
+
+```bash
+ls -la ~/.claude/skills/<名前>   # symlink になっていたら --copy で入れ直す
+```
+
 ## 収録スキル
 
 ### session-recap
