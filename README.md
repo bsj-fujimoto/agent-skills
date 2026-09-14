@@ -155,6 +155,86 @@ python3 skills/eli5-form/scripts/server.py --ensure   --port 8899 --dir <htmlの
 
 **必要なもの**: Python 3 / `claude` コマンド（質問機能を使う場合）
 
+### eli5
+
+トピックを**大きな図と少ない言葉だけ**で説明する 1 枚の HTML を作る。
+
+```bash
+/eli5 <トピック>
+```
+
+外部依存なし。`file://` でそのまま開ける。
+
+### commentable-html
+
+ローカルで開く HTML に、**任意の要素にピンを刺してコメントできるレイヤー**を埋め込む。
+書き出した JSON には打点先の要素だけでなく **生成元データの位置**（`data-src`）が入るので、
+そのまま AI に渡せば「どこを直せばいいか」が座標ではなく**データの添字**で決まる。
+
+```html
+<style>/* assets/comment-layer.css をそのまま貼る */</style>
+<script>window.CMT_DOC = { file:'report.html', dataSource:'tools/data.mjs' };</script>
+<script>/* assets/comment-layer.js をそのまま貼る */</script>
+```
+
+外部依存ゼロ。`localStorage` に保存するのでサーバーは要らない。印刷時は UI が消える。
+ピンは要素ボックス内の相対位置で持つため、**ウィンドウ幅を変えても追従する**。
+
+### mac-disk-audit
+
+Mac の容量を調べ、**「消して OK / 確認してから / クラウドへ / さわらない」**の 4 段階に仕分けして、
+コメントできる HTML レポートにする。
+
+```bash
+scripts/scan.sh > scan.txt          # 読み取りのみ。削除も移動もしない
+scripts/build-report.py data.json report.html
+```
+
+シミュレータの取り残し、重い `.git`、`node_modules`、キャッシュなどを 14 章に分けて洗い出す。
+前回スキャンとの差分（「8GB 空きました」）も出る。
+
+### codebase-audit-docs
+
+未知のシステム（サーバ / スマホアプリ / API 定義 ＋ 稼働中の AWS）を**逆生成**して、
+`docs/` 以下の検索できる HTML ドキュメント群にする。
+障害分析・スロークエリ分析・Well-Architected レビュー・改善ガイド（スコア付き）まで。
+
+**読み取れた事実には出典（`file:line`）を付け、読み取れないもの・推測は明示する**のが前提。
+AWS は read-only・no-load でしか触らない。
+
+### gh-reply-review
+
+GitHub PR の**レビューコメント（特定のコード行に付いたもの）のスレッドに返信する**。
+
+```bash
+scripts/reply.sh <pr-number> <comment-id> <message>
+```
+
+`gh pr comment` は PR 全体への issue comment しか投げられない。
+コード行に紐づくスレッドに返すには `in_reply_to` が要る、というのがこのスキルの理由。
+
+### claude-design-live-spec
+
+Claude Design の `.dc.html` 画面に、**採番チップ + 要素テーブル**の仕様書ページを足す。
+
+特徴は注釈の描き方。スクリーンショットへのヒューリスティックな当てはめではなく、
+**対象画面を iframe でライブ表示して実 DOM を `getBoundingClientRect()` で実測**する。
+そのため対象画面のレイアウトが変わっても、仕様書ページを再生成せずに追従する。
+
+対象プロジェクトに `tokens.css`（`--line` `--panel` `--ink-soft` など）が要る。
+
+### codex-imagegen
+
+Codex CLI の組み込み `image_gen` を Bash 経由で呼び、生成した PNG を指定の絶対パスに保存する。
+**OpenAI の API キーは要らない**（Codex 自身のサブスクリプション経由）。
+
+```bash
+codex exec --sandbox workspace-write --skip-git-repo-check \
+  '$imagegen <プロンプト>。/abs/path/out.png に保存してください。' < /dev/null
+```
+
+参照画像は `-i` で渡せる。1 回 30 秒〜2 分かかるので、呼ぶ側のタイムアウトを長めに取る。
+
 ## ライセンス
 
 MIT

@@ -1,0 +1,64 @@
+<!-- 自己完結スコアダッシュボード(改善ガイド冒頭に貼る)。
+     ページ内 <style> で完結させ、共有CSSのキャッシュに依存させない。
+     ★調整ポイント: 総合値/グレード、conic-gradient の % (=総合値%)、各タイルの score・width%・色・グレード・根拠。
+     配色(状態カラー・赤→橙→黄→緑の知覚順・値+ラベル併記でCVD安全):
+       危機 <40 = #f2545b(E) / 要改善 40-54 = #f5924b(D) / 注意 55-69 = #e8b93a(C) / 良好 70+ = #35c07a(B,A)
+     総合の目安計算: 観点をユーザー影響で重み付け平均(例 セキュリティ/DB各25%・可用性20%・運用/コスト/保守各10%)。 -->
+<style>
+  .sd-wrap{background:radial-gradient(120% 140% at 0% 0%,#182230 0%,#0f151d 60%);border:1px solid #26323f;border-radius:16px;padding:24px 26px;margin:16px 0 10px;color:#e7edf3;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+  .sd-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .sd-top .sd-t{font-size:12px;font-weight:800;letter-spacing:1.5px;color:#8ba0b4;text-transform:uppercase}
+  .sd-goal{font-size:12px;color:#b7c4d2;background:#182533;border:1px solid #2a3a4a;border-radius:20px;padding:5px 12px}
+  .sd-goal b{color:#35c07a}
+  .sd-body{display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+  .sd-gauge{width:176px;height:176px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;box-shadow:0 0 0 1px #26323f inset}
+  .sd-hole{width:132px;height:132px;border-radius:50%;background:#0f151d;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+  .sd-num{font-size:46px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .sd-gchip{font-size:11px;font-weight:800;padding:2px 11px;border-radius:20px;margin-top:7px;color:#0f151d}
+  .sd-of{font-size:10px;color:#7f8fa0;margin-top:6px;letter-spacing:1px}
+  .sd-tiles{flex:1;min-width:300px;display:grid;grid-template-columns:repeat(auto-fit,minmax(234px,1fr));gap:13px}
+  .sd-tile{background:linear-gradient(180deg,#1b2531,#161e28);border:1px solid #2a3644;border-radius:12px;padding:13px 15px;transition:.15s}
+  .sd-tile:hover{border-color:#3a4a5c;transform:translateY(-2px)}
+  .sd-th{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .sd-name{font-size:12.5px;font-weight:700;color:#dce5ef}
+  .sd-badge{font-size:10px;font-weight:800;padding:1px 8px;border-radius:5px;color:#0f151d}
+  .sd-scorewrap{display:flex;align-items:baseline;gap:4px;margin:7px 0 8px}
+  .sd-score{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .sd-max{font-size:11px;color:#788699}
+  .sd-meter{height:8px;background:#2b3644;border-radius:5px;overflow:hidden}
+  .sd-mfill{height:100%;border-radius:5px}
+  .sd-reason{font-size:11px;color:#94a3b4;margin-top:9px;line-height:1.55}
+  .sd-reason a{color:#5aa9ff;text-decoration:none}
+  .sd-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#93a1b0;margin-top:18px;border-top:1px solid #26323f;padding-top:13px}
+  .sd-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+</style>
+<div class="sd-wrap" role="img" aria-label="総合スコア 41点 グレードD 要改善">
+  <div class="sd-top">
+    <span class="sd-t">■ System Health Score</span>
+    <span class="sd-goal">現状 <b style="color:#f5924b">D</b> ／ 目標 <b>B (75+)</b></span>
+  </div>
+  <div class="sd-body">
+    <div class="sd-gauge" style="background:conic-gradient(#f5924b 0 41%,#2b3644 41% 100%)">
+      <div class="sd-hole">
+        <div class="sd-num" style="color:#f5924b">41</div>
+        <div class="sd-gchip" style="background:#f5924b">D ・ 要改善</div>
+        <div class="sd-of">総合 / 100</div>
+      </div>
+    </div>
+    <div class="sd-tiles">
+      <!-- タイルを観点ごとに複製。score/width%/色/グレード/根拠を差し替える -->
+      <div class="sd-tile">
+        <div class="sd-th"><span class="sd-name">🔐 観点名</span><span class="sd-badge" style="background:#f2545b">E</span></div>
+        <div class="sd-scorewrap"><span class="sd-score" style="color:#f2545b">32</span><span class="sd-max">/100</span></div>
+        <div class="sd-meter"><div class="sd-mfill" style="width:32%;background:#f2545b"></div></div>
+        <div class="sd-reason">一行の根拠。<a href="../infra/....html">詳細 →</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="sd-legend">
+    <span><i style="background:#f2545b"></i>危機 (〜39 / E)</span>
+    <span><i style="background:#f5924b"></i>要改善 (40〜54 / D)</span>
+    <span><i style="background:#e8b93a"></i>注意 (55〜69 / C)</span>
+    <span><i style="background:#35c07a"></i>良好 (70〜 / B・A)</span>
+  </div>
+</div>

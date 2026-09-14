@@ -1,0 +1,30 @@
+<meta charset="UTF-8">
+<title>ページタイトル | プロジェクト名</title>
+<link rel="stylesheet" href="../assets/style.css"><!-- ルート直下ページなら ./assets/style.css -->
+<meta name="description" content="このページの1行説明">
+<div class="layout">
+  <aside id="sidebar"></aside>
+  <main>
+    <div class="breadcrumb"><a href="../index.html">トップ</a> ／ 章 ／ ページ名</div>
+    <h1>ページ見出し</h1>
+    <p class="lead">このページの要約(何がわかるか)。</p>
+
+    <!-- 使える部品(style.css 提供):
+      情報/推測/注意/危険:   <div class="info">..</div> <div class="infer">..</div> <div class="warn">..</div> <div class="danger">..</div>
+      情報源リンク:          <a class="src">src/path/File.php:123</a>
+      表:                   <div class="table-wrap"><table><thead>..</thead><tbody>..</tbody></table></div>
+      バッジ:               <span class="badge get|post|put|delete|v1|alive|maybe-dead|dead">..</span>
+      カード目次:           <div class="card-grid"><a class="card" href=".."><div class="c-ico">🗺️</div><div class="c-title">..</div><div class="c-desc">..</div></a></div>
+      統計:                 <div class="stat-row"><div class="stat"><div class="n">42</div><div class="l">ラベル</div></div></div>
+      図(archify):          <iframe class="diagram mid" src="../diagrams/xxx.html" title=".." loading="lazy"></iframe>
+                            <p class="diagram-cap">図は archify 生成。 <a href="../diagrams/xxx.html" target="_blank">別ウィンドウで開く</a></p>
+    -->
+
+    <h2>見出し</h2>
+    <p>本文。事実には <a class="src">情報源:line</a> を付け、推測は <span style="color:var(--amber)">🔎</span> 明示。</p>
+
+    <footer class="docfoot">プロジェクト リバースエンジニアリング ドキュメント</footer>
+  </main>
+</div>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/site.js"></script>

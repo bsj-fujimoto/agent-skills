@@ -1,0 +1,153 @@
+/* ------------------------------------------------------------------
+   コメントレイヤー
+   ページ側のCSSに依存しないよう、色は --c-* として自前で持つ。
+   ライトが素の値、ダークは (1) OS設定 (2) [data-theme=dark] の両方で効かせる。
+   ------------------------------------------------------------------ */
+:root{
+  --c-accent:#0B7F72; --c-accent-ink:#FFFFFF; --c-accent-soft:#E4F2EF;
+  --c-surface:#FFFFFF; --c-surface-2:#F2F5F4; --c-ink:#0E1519; --c-ink-2:#3A4A53;
+  --c-muted:#66798B; --c-line:#C9D3D2; --c-line-soft:#DFE5E4;
+  --c-done:#8B9CA9; --c-danger:#A6412D; --c-shadow:0 8px 28px rgba(14,21,25,.16);
+  --c-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --c-sans:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic Medium",Meiryo,sans-serif;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --c-accent:#4FD3BE; --c-accent-ink:#06201C; --c-accent-soft:#11282A;
+  --c-surface:#141D22; --c-surface-2:#1A2429; --c-ink:#E9EFEE; --c-ink-2:#BAC8CA;
+  --c-muted:#8B9CA9; --c-line:#2A383E; --c-line-soft:#222E33;
+  --c-done:#5C6E77; --c-danger:#E58467; --c-shadow:0 8px 28px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --c-accent:#4FD3BE; --c-accent-ink:#06201C; --c-accent-soft:#11282A;
+  --c-surface:#141D22; --c-surface-2:#1A2429; --c-ink:#E9EFEE; --c-ink-2:#BAC8CA;
+  --c-muted:#8B9CA9; --c-line:#2A383E; --c-line-soft:#222E33;
+  --c-done:#5C6E77; --c-danger:#E58467; --c-shadow:0 8px 28px rgba(0,0,0,.5);
+}
+
+/* 打点モード中はページ全体を狙える状態にする */
+body.cmt-picking, body.cmt-picking *{cursor:crosshair!important}
+body.cmt-picking ::selection{background:transparent}
+/* ただしコメントUIの中まで十字にすると入力できないので戻す */
+body.cmt-picking :is(.cmt-pop,#cmt-bar,#cmt-panel,#cmt-modal) *{cursor:auto!important}
+body.cmt-picking :is(.cmt-pop,#cmt-bar,#cmt-panel,#cmt-modal) :is(button,.cmt-item,.cmt-pin){cursor:pointer!important}
+body.cmt-picking :is(.cmt-pop,#cmt-modal) :is(textarea,input){cursor:text!important}
+body.cmt-picking .cmt-pop > header, body.cmt-picking .cmt-pop > header *{cursor:move!important}
+
+/* ---- ピンを載せる面（本文の上に重ねるだけ。クリックは素通し） ---- */
+#cmt-layer{position:absolute;left:0;top:0;width:100%;height:0;z-index:9000;pointer-events:none}
+#cmt-layer > *{pointer-events:auto}
+
+/* 打点モード中、狙っている要素を光らせる */
+#cmt-aim{position:absolute;border:1.5px solid var(--c-accent);border-radius:3px;
+  background:color-mix(in srgb,var(--c-accent) 9%,transparent);pointer-events:none!important;
+  z-index:8999;transition:all .06s linear}
+#cmt-aim::after{content:attr(data-hint);position:absolute;left:0;bottom:100%;margin-bottom:3px;
+  background:var(--c-accent);color:var(--c-accent-ink);font:600 10.5px/1.5 var(--c-mono);
+  padding:2px 7px;border-radius:2px;white-space:nowrap;max-width:520px;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- ピン ---- */
+.cmt-pin{position:absolute;width:26px;height:26px;margin:-26px 0 0 -2px;border:0;padding:0;
+  background:var(--c-accent);color:var(--c-accent-ink);border-radius:50% 50% 50% 3px;
+  font:700 11px/1 var(--c-mono);display:grid;place-items:center;cursor:pointer;
+  box-shadow:var(--c-shadow);z-index:2;transition:transform .1s ease}
+.cmt-pin:hover{transform:scale(1.12)}
+.cmt-pin[data-status="resolved"]{background:var(--c-surface);color:var(--c-done);
+  border:1.5px solid var(--c-done);box-shadow:none}
+.cmt-pin[data-orphan="true"]{background:var(--c-danger);color:#fff}
+.cmt-pin.is-active{outline:2px solid var(--c-accent);outline-offset:2px}
+.cmt-pin.is-dragging{opacity:.6;transform:scale(1.15)}
+/* 保存前の打点位置 */
+.cmt-pin.draft{background:var(--c-surface);border:1.5px dashed var(--c-accent);color:var(--c-accent);
+  font-style:normal;box-shadow:none;pointer-events:none;animation:cmt-blink 1.4s ease-in-out infinite}
+@keyframes cmt-blink{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.cmt-pin.draft{animation:none}}
+
+/* ---- 吹き出し（作成・閲覧の両方） ---- */
+.cmt-pop{position:absolute;width:340px;max-width:calc(100vw - 24px);background:var(--c-surface);
+  border:1px solid var(--c-line);border-radius:6px;box-shadow:var(--c-shadow);
+  font-family:var(--c-sans);color:var(--c-ink);z-index:10;overflow:hidden}
+.cmt-pop > header{display:flex;align-items:center;gap:7px;padding:9px 11px;background:var(--c-surface-2);
+  border-bottom:1px solid var(--c-line-soft);cursor:move;touch-action:none;user-select:none}
+.cmt-grip{font:12px/1 var(--c-mono);color:var(--c-muted);letter-spacing:-2px}
+.cmt-pop > header:hover .cmt-grip{color:var(--c-accent)}
+.cmt-pop header b{font-size:12px;font-weight:700}
+.cmt-pop header .cmt-x{margin-left:auto}
+.cmt-tgt{padding:8px 11px;border-bottom:1px solid var(--c-line-soft);background:var(--c-accent-soft)}
+.cmt-tgt code{display:block;font:11px/1.55 var(--c-mono);color:var(--c-accent);word-break:break-all}
+.cmt-tgt span{display:block;font-size:11px;color:var(--c-ink-2);margin-top:3px;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cmt-body{padding:11px}
+.cmt-pop textarea{width:100%;min-height:76px;resize:vertical;font:13px/1.65 var(--c-sans);
+  color:var(--c-ink);background:var(--c-surface);border:1px solid var(--c-line);border-radius:4px;padding:8px 9px}
+.cmt-pop textarea:focus{outline:2px solid var(--c-accent);outline-offset:-1px;border-color:var(--c-accent)}
+.cmt-pop input[type=text]{width:100%;font:12px var(--c-sans);color:var(--c-ink);background:var(--c-surface);
+  border:1px solid var(--c-line);border-radius:4px;padding:6px 8px;margin-top:7px}
+.cmt-msg{font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.cmt-meta{font:11px var(--c-mono);color:var(--c-muted);margin-bottom:5px}
+.cmt-reply{border-top:1px dashed var(--c-line-soft);margin-top:10px;padding-top:9px}
+.cmt-acts{display:flex;gap:7px;align-items:center;padding:9px 11px;border-top:1px solid var(--c-line-soft);
+  background:var(--c-surface-2);flex-wrap:wrap}
+.cmt-acts .sp{margin-left:auto}
+
+/* ---- ボタン ---- */
+.cmt-btn{font:600 11.5px var(--c-sans);padding:6px 11px;border-radius:4px;cursor:pointer;
+  border:1px solid var(--c-line);background:var(--c-surface);color:var(--c-ink-2)}
+.cmt-btn:hover{border-color:var(--c-accent);color:var(--c-accent)}
+.cmt-btn.pri{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accent-ink)}
+.cmt-btn.pri:hover{opacity:.88;color:var(--c-accent-ink)}
+.cmt-btn.dgr:hover{border-color:var(--c-danger);color:var(--c-danger)}
+.cmt-btn.ico{padding:4px 7px;font-size:13px;line-height:1}
+.cmt-btn:focus-visible{outline:2px solid var(--c-accent);outline-offset:1px}
+
+/* ---- 右下のバー ---- */
+#cmt-bar{position:fixed;right:16px;bottom:16px;z-index:9500;display:flex;gap:7px;align-items:center;
+  background:var(--c-surface);border:1px solid var(--c-line);border-radius:7px;padding:6px;
+  box-shadow:var(--c-shadow);font-family:var(--c-sans)}
+#cmt-bar .cmt-btn{white-space:nowrap}
+/* 一覧を開いている間は、パネルのフッターに被らないよう左へ逃がす */
+#cmt-panel.open ~ #cmt-bar{right:386px}
+@media (max-width:520px){#cmt-panel.open ~ #cmt-bar{right:16px;bottom:auto;top:12px}}
+#cmt-bar .cmt-btn[aria-pressed="true"]{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accent-ink)}
+#cmt-count{font:700 11px var(--c-mono);color:var(--c-muted);padding:0 5px;font-variant-numeric:tabular-nums}
+
+/* ---- 一覧パネル ---- */
+#cmt-panel{position:fixed;right:0;top:0;bottom:0;width:370px;max-width:92vw;z-index:9400;
+  background:var(--c-surface);border-left:1px solid var(--c-line);box-shadow:var(--c-shadow);
+  display:flex;flex-direction:column;font-family:var(--c-sans);transform:translateX(101%);
+  transition:transform .18s ease;visibility:hidden}
+#cmt-panel.open{transform:none;visibility:visible}
+#cmt-panel > header{display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid var(--c-line)}
+#cmt-panel > header b{font-size:13.5px}
+#cmt-panel .list{flex:1;overflow-y:auto;padding:9px}
+#cmt-panel footer{padding:10px 12px;border-top:1px solid var(--c-line);background:var(--c-surface-2);
+  display:flex;gap:7px;flex-wrap:wrap}
+.cmt-item{border:1px solid var(--c-line-soft);border-radius:5px;padding:10px 11px;margin-bottom:8px;
+  cursor:pointer;background:var(--c-surface)}
+.cmt-item:hover{border-color:var(--c-accent)}
+.cmt-item.is-active{border-color:var(--c-accent);background:var(--c-accent-soft)}
+.cmt-item.resolved{opacity:.55}
+.cmt-item h4{margin:0 0 5px;font:700 11px var(--c-mono);color:var(--c-accent);display:flex;gap:7px;align-items:center}
+.cmt-item h4 .st{margin-left:auto;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.06em}
+.cmt-item p{margin:0;font-size:12.5px;line-height:1.6;color:var(--c-ink);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.cmt-item code{display:block;margin-top:6px;font:10.5px/1.5 var(--c-mono);color:var(--c-muted);word-break:break-all}
+.cmt-empty{padding:26px 14px;text-align:center;font-size:12.5px;color:var(--c-muted);line-height:1.8}
+
+/* ---- JSONの受け渡し ---- */
+#cmt-modal{position:fixed;inset:0;z-index:9600;background:rgba(6,12,14,.55);
+  display:grid;place-items:center;padding:22px;font-family:var(--c-sans)}
+#cmt-modal .box{background:var(--c-surface);border:1px solid var(--c-line);border-radius:7px;
+  width:min(860px,100%);max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--c-shadow)}
+#cmt-modal header{display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--c-line)}
+#cmt-modal header b{font-size:13.5px}
+#cmt-modal .hint{padding:10px 15px;font-size:12px;line-height:1.7;color:var(--c-ink-2);
+  background:var(--c-accent-soft);border-bottom:1px solid var(--c-line-soft)}
+#cmt-modal textarea{flex:1;min-height:300px;width:100%;border:0;padding:13px 15px;resize:none;
+  font:11.5px/1.65 var(--c-mono);color:var(--c-ink);background:var(--c-surface)}
+#cmt-modal textarea:focus{outline:none}
+#cmt-modal footer{padding:11px 15px;border-top:1px solid var(--c-line);background:var(--c-surface-2);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+@media print{#cmt-bar,#cmt-panel,#cmt-modal,#cmt-aim{display:none!important}
+  .cmt-pop{display:none!important}}
+@media (prefers-reduced-motion:reduce){#cmt-panel,.cmt-pin,#cmt-aim{transition:none!important}}

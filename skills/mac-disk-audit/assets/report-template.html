@@ -1,0 +1,187 @@
+<title>__TITLE__</title>
+<style>
+:root{
+  --bg:#faf7f2; --panel:#fff; --ink:#1c1917; --sub:#6b6560; --line:#e6e0d8;
+  --green:#1f9d55; --green-bg:#e9f7ef; --amber:#c9760b; --amber-bg:#fdf3e3;
+  --blue:#1e6fd9;  --blue-bg:#e8f0fd;  --red:#c0392b;   --red-bg:#fbecea;
+  --shadow:0 1px 2px rgba(28,25,23,.06),0 8px 24px rgba(28,25,23,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17150f; --panel:#211e18; --ink:#f5f1ea; --sub:#a9a29a; --line:#332f27;
+  --green:#4ade80; --green-bg:#16281e; --amber:#fbbf24; --amber-bg:#2c2314;
+  --blue:#7cb0ff;  --blue-bg:#141f31; --red:#f87171;  --red-bg:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);}}
+:root[data-theme="dark"]{
+  --bg:#17150f; --panel:#211e18; --ink:#f5f1ea; --sub:#a9a29a; --line:#332f27;
+  --green:#4ade80; --green-bg:#16281e; --amber:#fbbf24; --amber-bg:#2c2314;
+  --blue:#7cb0ff;  --blue-bg:#141f31; --red:#f87171;  --red-bg:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  line-height:1.75; -webkit-font-smoothing:antialiased}
+.wrap{max-width:920px; margin:0 auto; padding-inline:20px; padding-block:0 90px}
+h1{font-size:clamp(30px,6vw,48px); line-height:1.25; margin:0 0 8px; letter-spacing:-.02em}
+h2{font-size:clamp(22px,4.2vw,30px); line-height:1.35; margin:0 0 6px; letter-spacing:-.01em}
+h3{font-size:17px; margin:0}
+p{margin:0 0 14px}
+.lead{font-size:clamp(16px,2.6vw,19px); color:var(--sub); margin:0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em}
+header.hero{padding-block:56px 28px; text-align:center}
+.badge{display:inline-block; font-size:13px; font-weight:700; letter-spacing:.08em;
+  color:var(--sub); border:1px solid var(--line); border-radius:999px; padding:4px 14px; margin-bottom:18px}
+.gauge{margin:34px auto 0; max-width:640px}
+.gauge svg{width:100%; height:auto; display:block}
+.gaugeNums{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px}
+.gaugeNums div{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:12px 18px; min-width:130px; box-shadow:var(--shadow)}
+.gaugeNums b{display:block; font-size:26px; line-height:1.2; letter-spacing:-.02em}
+.gaugeNums span{font-size:12px; color:var(--sub)}
+section{margin-top:64px}
+.secHead{display:flex; gap:16px; align-items:flex-start; margin-bottom:22px}
+.secIcon{flex:0 0 auto; width:56px; height:56px; border-radius:16px; display:grid; place-items:center; font-size:28px}
+.figure{background:var(--panel); border:1px solid var(--line); border-radius:20px;
+  padding:24px 20px; box-shadow:var(--shadow); overflow-x:auto}
+.figure svg{display:block; margin:0 auto; max-width:100%; height:auto}
+.cards{display:flex; flex-direction:column; gap:12px}
+.card{background:var(--panel); border:1px solid var(--line); border-left-width:5px;
+  border-radius:14px; padding:16px 18px; box-shadow:var(--shadow)}
+.cardTop{display:flex; gap:12px; align-items:baseline; flex-wrap:wrap}
+.size{font-size:24px; font-weight:800; letter-spacing:-.02em; margin-left:auto; white-space:nowrap}
+.bar{height:7px; border-radius:99px; background:var(--line); margin:10px 0 12px; overflow:hidden}
+.bar i{display:block; height:100%; border-radius:99px}
+.what{margin:0 0 10px; font-size:15px}
+.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; color:var(--sub);
+  word-break:break-all; margin:0 0 8px}
+.cmd{position:relative; background:var(--bg); border:1px solid var(--line); border-radius:10px;
+  padding:10px 46px 10px 12px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12.5px; overflow-x:auto; white-space:pre; margin-top:8px}
+.cmd button{position:absolute; top:6px; right:6px; border:1px solid var(--line); background:var(--panel);
+  color:var(--sub); border-radius:7px; font-size:11px; padding:3px 8px; cursor:pointer; font-family:inherit}
+.cmd button:hover{color:var(--ink)}
+.done{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px}
+.doneItem{background:var(--green-bg); border:1px solid var(--line); border-radius:12px;
+  padding:11px 14px; display:flex; gap:10px; align-items:baseline}
+.doneItem b{color:var(--green); font-size:16px; white-space:nowrap}
+.doneItem span{font-size:13.5px}
+.steps{counter-reset:s; display:flex; flex-direction:column; gap:12px}
+.step{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px 16px 60px;
+  position:relative; box-shadow:var(--shadow)}
+.step::before{counter-increment:s; content:counter(s); position:absolute; left:16px; top:15px;
+  width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--bg);
+  display:grid; place-items:center; font-weight:800; font-size:15px}
+.step b{font-size:16px}
+.step .gain{float:right; font-weight:800; color:var(--green); font-size:15px}
+.note{background:var(--amber-bg); border:1px solid var(--line); border-left:5px solid var(--amber);
+  border-radius:12px; padding:14px 18px; font-size:14.5px; margin-top:16px}
+footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--line); font-size:13px; color:var(--sub)}
+@media print{.cmd button{display:none}}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const D = __DATA__;
+</script>
+<script>
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const m = D.meta, C = {green:'--green', amber:'--amber', blue:'--blue', red:'--red'};
+const usedW = Math.round(m.usedGB / m.totalGB * 600);
+const prevW = m.prevUsedGB ? Math.round(m.prevUsedGB / m.totalGB * 600) : 0;
+const allItems = D.groups.flatMap(g => g.items);
+const MAX = Math.max(1, ...allItems.map(i => i.gb || 0));
+
+function gauge(){
+  const saved = m.prevFreeGB != null ? (m.freeGB - m.prevFreeGB) : null;
+  return `<div class="gauge" data-src="meta.gauge" data-label="ディスク使用量ゲージ">
+  <svg viewBox="0 0 640 ${saved!=null?230:200}" role="img" aria-label="${m.totalGB}GB中${m.usedGB}GB使用、空き${m.freeGB}GB">
+    <defs><clipPath id="jar"><rect x="20" y="60" width="600" height="100" rx="20"/></clipPath></defs>
+    ${prevW ? `<text x="320" y="34" text-anchor="middle" font-size="14" fill="var(--sub)">前回</text>
+    <rect x="20" y="42" width="600" height="9" rx="4.5" fill="var(--line)"/>
+    <rect x="20" y="42" width="${prevW}" height="9" rx="4.5" fill="var(--sub)" opacity=".55"/>` : ''}
+    <rect x="20" y="60" width="600" height="100" rx="20" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>
+    <g clip-path="url(#jar)">
+      <rect x="20" y="60" width="${usedW}" height="100" fill="var(--red)" opacity=".16"/>
+      <rect x="${20+usedW}" y="60" width="${600-usedW}" height="100" fill="var(--green)" opacity=".26"/>
+    </g>
+    <line x1="${20+usedW}" y1="60" x2="${20+usedW}" y2="160" stroke="var(--line)" stroke-width="2"/>
+    <text x="${20+usedW/2}" y="118" text-anchor="middle" font-size="24" font-weight="800" fill="var(--ink)">つかってる ${m.usedGB}GB</text>
+    <text x="${320+usedW/2}" y="${m.prevFreeGB!=null?112:118}" text-anchor="middle" font-size="22" font-weight="800" fill="var(--ink)">空き ${m.freeGB}GB</text>
+    ${m.prevFreeGB!=null?`<text x="${320+usedW/2}" y="134" text-anchor="middle" font-size="13" fill="var(--sub)">前回 ${m.prevFreeGB}GB</text>`:''}
+    ${saved!=null?`<text x="320" y="192" text-anchor="middle" font-size="20" font-weight="800" fill="var(--green)">${saved}GB 空きました 🎉</text>`:''}
+    <text x="320" y="${saved!=null?214:186}" text-anchor="middle" font-size="14" fill="var(--sub)">ディスク全体 ${m.totalGB}GB ／ 使用率 ${Math.round(m.usedGB/(m.usedGB+m.freeGB)*100)}%</text>
+  </svg></div>`;
+}
+
+function head(icon, bg, color, title, lead){
+  return `<div class="secHead"><div class="secIcon" style="background:${bg};color:${color}">${icon}</div>
+    <div><h2>${title}</h2>${lead?`<p class="lead">${lead}</p>`:''}</div></div>`;
+}
+
+function card(it, color, src){
+  const pct = Math.max(4, Math.round((it.gb||0) / MAX * 100));
+  return `<div class="card" style="border-left-color:var(${color})" data-src="${src}" data-role="item" data-label="${esc(it.name)}">
+    <div class="cardTop"><h3>${it.name}</h3><div class="size" style="color:var(${color})">${it.size}</div></div>
+    <div class="bar"><i style="width:${pct}%;background:var(${color})"></i></div>
+    <p class="what">${it.what}</p>
+    ${it.path?`<p class="path">${esc(it.path)}</p>`:''}
+    ${it.cmd?`<div class="cmd"><button>copy</button>${esc(it.cmd)}</div>`:''}
+  </div>`;
+}
+
+let html = `<header class="hero" data-section="トップ" data-src="meta">
+  <div class="badge">${m.badge||''}</div>
+  <h1>${m.title||'Macお片付けマップ'}</h1>
+  ${m.lead?`<p class="lead">${m.lead}</p>`:''}
+  ${gauge()}
+  <div class="gaugeNums" data-src="meta.nums">
+    <div><b>${m.freeGB}<small>GB</small></b><span>いまの空き</span></div>
+    ${D.groups.filter(g=>g.headline).map(g=>
+      `<div><b style="color:var(${C[g.color]})">+${g.headline}<small>GB</small></b><span>${g.headlineLabel||g.title}</span></div>`).join('')}
+  </div></header>`;
+
+if (D.done && D.done.length){
+  html += `<section data-section="片付いたもの" data-src="done">
+    ${head('✅','var(--green-bg)','var(--green)',`片付いたもの <span style="color:var(--green)">${D.doneTotal||''}</span>`,'前回のリストから、これだけ消えていました。')}
+    <div class="done">${D.done.map((d,i)=>
+      `<div class="doneItem" data-src="done[${i}]" data-role="done" data-label="${esc(d.name)}"><b>${d.size}</b><span>${d.name}</span></div>`).join('')}</div></section>`;
+}
+
+if (D.highlight){
+  html += `<section data-section="発見" data-src="highlight">
+    ${head('💡','var(--amber-bg)','var(--amber)', D.highlight.title, D.highlight.lead)}
+    <div class="figure">${D.highlight.svg||''}</div></section>`;
+}
+
+D.groups.forEach((g,gi)=>{
+  html += `<section data-section="${esc(g.title)}" data-src="groups[${gi}]">
+    ${head(g.icon, `var(${C[g.color]}-bg)`, `var(${C[g.color]})`,
+      `${g.title} ${g.total?`<span style="color:var(${C[g.color]})">${g.total}</span>`:''}`, g.lead)}
+    <div class="cards">${g.items.map((it,i)=>card(it, C[g.color], `groups[${gi}].items[${i}]`)).join('')}</div></section>`;
+});
+
+if (D.steps && D.steps.length){
+  html += `<section data-section="おすすめの順番" data-src="steps">
+    ${head('🪜','var(--bg)','var(--ink)', D.stepsTitle||'つぎにやるなら、この順番','効果が大きく、判断がかんたんな順です。')}
+    <div class="steps">${D.steps.map((s,i)=>
+      `<div class="step" data-src="steps[${i}]" data-role="step" data-label="${esc(s.title)}">
+        <span class="gain">${s.gain||''}</span><b>${s.title}</b><br>
+        <span style="color:var(--sub);font-size:14.5px">${s.detail}</span></div>`).join('')}</div>
+    ${D.note?`<div class="note" data-src="note">${D.note}</div>`:''}</section>`;
+}
+
+html += `<footer data-src="footer">${D.footer||''}</footer>`;
+document.getElementById('app').innerHTML = html;
+
+document.addEventListener('click', e=>{
+  const b = e.target.closest('.cmd button'); if(!b) return;
+  const box = b.parentElement;
+  const text = Array.from(box.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
+  navigator.clipboard?.writeText(text);
+  b.textContent = 'copied'; setTimeout(()=>b.textContent='copy', 1200);
+});
+</script>
+
+<script>
+window.CMT_DOC = { file: '__FILENAME__', generator: 'skills/mac-disk-audit/scripts/build-report.py', dataSource: '__DATAFILE__' };
+</script>
