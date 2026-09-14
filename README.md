@@ -26,10 +26,23 @@ npx skills add bsj-fujimoto/agent-skills --skill session-recap
 長い作業ログを、あとから来た人が5分で追える1枚にするためのもの。
 議事録ではなく「進め方の地図」を作る。
 
+```bash
+# 既定: 別プロセスに投げる（元のセッションに作業ログを残さない）
+~/.claude/skills/session-recap/scripts/detached.sh <セッションID> out.html
+
+# そのまま実行（使い捨てセッション向け）
+/session-recap
+/session-recap 80ee9307
 ```
-/session-recap              いまのセッション
-/session-recap 80ee9307     ID指定（部分一致可）
-```
+
+**なぜ別プロセスが既定か。** このスキルを使いたい場面は、たいてい
+参考にしたい良いやり取りが行われたセッション。そこで実行すると、
+HTMLを作る作業そのものがそのセッションのログに残る。
+振り返る価値のある会話ほど、末尾に作業ログがぶら下がるのは惜しい。
+
+`detached.sh` は `claude -p` / `cursor-agent -p` / `codex exec` のうち
+使えるものを選んで投げる。呼ばれた側が自分で SKILL.md を読み、
+最後まで作って出力パスだけを返す。
 
 出力は単一HTMLファイル（外部依存なし）。段階ごとのフィルタと、
 流れが変わった回のハイライト付き。
