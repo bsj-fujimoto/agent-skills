@@ -44,14 +44,47 @@
 ツール使用は `tool_use` / `tool_call` / `function_call` / `toolCall` を数え、
 名前が `Agent` / `Task` / `subagent` のものはサブエージェント委譲として別に数える。
 
+## エージェント別の状況（2026-09 時点の公開情報）
+
+| エージェント | 保存形式 | 読めるか |
+|---|---|---|
+| Claude Code | `~/.claude/projects/*/*.jsonl` | ✅ 実物で検証済み |
+| OpenAI Codex CLI | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | ✅ 実形式の合成ログで検証 |
+| GitHub Copilot CLI | `~/.copilot/session-state/**/*.jsonl` | ⚠️ 未検証（キー名が非公開） |
+| Gemini CLI | JSONL へ移行中 | ⚠️ 未検証（`role` か `type` か未確定） |
+| opencode | `opencode.db`（SQLite） | ❌ |
+| Goose | `sessions.db`（SQLite） | ❌ |
+| Crush | `<project>/.crush/crush.db`（SQLite） | ❌ |
+| Cursor | `store.db` / `state.vscdb`（SQLite） | ❌ |
+| Aider | `.aider.chat.history.md`（Markdown） | ❌ |
+
+**SQLite への移行が業界的な流れ**で、opencode・Goose・Copilot・Cursor が既に移行済み。
+渡されたファイルが SQLite なら先頭16バイトで判定し、理由と `.schema` の
+実行方法を案内する。カラム名さえ分かれば数行の SQL で JSONL に落とせる。
+
 ## 読めないもの
 
-- **Markdown 形式のログ**（Aider の `.aider.chat.history.md` など）
-  役割の区切りが見出しの書き方に依存し、本文と混ざるため構造が取れない。
-  必要なら手で JSONL に直す。
-- **SQLite に入っているもの**
-- **コマンド履歴だけのファイル**（`~/.claude/history.jsonl` など）
-  発話が入っていないので、そもそも対象外。
+- **SQLite** — 上記の通り。`.schema` を見て JSONL に書き出してから渡す
+- **Markdown 形式のログ**（Aider）
+  役割の区切りが見出し記号に依存するが、`####` や `>` はAIの出力本文にも
+  現れるため原理的に曖昧。サンプルを集めても消えない種類のリスク
+- **発話が片側しか無いファイル** — 拾うと壊れた要約になるので名前で弾く
+  - Gemini の `logs.json`（ユーザーのプロンプトのみ、AI応答が入らない）
+  - Claude Code の `history.jsonl`（コマンド履歴のみ）
+
+## 注意点
+
+**同じエージェントでも複数の形式が同一マシンに共存しうる。**
+opencode と Goose は SQLite 移行時に旧ファイルが残る
+（opencode には移行が黙って skip される既知バグもある）。
+「エージェント名 → 形式」の 1:1 対応は成立しない。
+
+**Codex の `arguments` は JSON オブジェクトではなく JSON 文字列。**
+中身を使うなら二重パースが要る（このスキルは回数しか数えないので影響なし）。
+
+**いずれも公式仕様ではなく実装詳細。** Codex・Cursor・opencode・Crush は
+公式ドキュメントに保存形式の記載が無い。バージョンで変わる前提で、
+未知のレコードは握り潰さずスキップする。
 
 ## 未知の形式に当たったら
 

@@ -25,12 +25,28 @@ HOME = os.path.expanduser("~")
 # ログの置き場。実在するものだけを探す。
 # 「1ファイル=1セッション」の形式のみを対象にする（コマンド履歴などは対象外）。
 SEARCH_PATHS = [
-    ("claude",   os.path.join(HOME, ".claude/projects/*/*.jsonl")),
-    ("codex",    os.path.join(HOME, ".codex/sessions/**/*.jsonl")),
-    ("opencode", os.path.join(HOME, ".local/share/opencode/**/*.json")),
-    ("gemini",   os.path.join(HOME, ".gemini/tmp/**/*.json")),
-    ("copilot",  os.path.join(HOME, ".copilot/history-session-state/*.json")),
+    ("claude",  os.path.join(HOME, ".claude/projects/*/*.jsonl")),
+    ("codex",   os.path.join(HOME, ".codex/sessions/**/rollout-*.jsonl")),
+    ("copilot", os.path.join(HOME, ".copilot/session-state/**/*.jsonl")),
+    ("copilot", os.path.join(HOME, ".copilot/history-session-state/**/*.jsonl")),
 ]
+
+# 「発話が揃っていない」ことが分かっているファイル。拾うと片側だけの
+# 壊れた要約になるので、名前で弾く。
+# - Gemini の logs.json はユーザーのプロンプトのみでAI応答が入らない
+#   https://github.com/google-gemini/gemini-cli/issues/22604
+# - Claude Code の history.jsonl はコマンド履歴のみ
+DENY_BASENAMES = ("logs.json", "history.jsonl")
+
+# SQLite に入っていて、このスキルでは読めないもの（見つけたら理由を伝える）
+SQLITE_HINTS = {
+    "opencode.db": "opencode",
+    "sessions.db": "Goose",
+    "crush.db": "Crush",
+    "session-store.db": "GitHub Copilot CLI",
+    "store.db": "Cursor",
+    "state.vscdb": "Cursor",
+}
 
 # 人間の入力ではない、システム側が注入するもの
 NOISE_PREFIXES = (
@@ -56,9 +72,30 @@ def die(msg):
 
 def load_records(path):
     """JSONL でも JSON でも、レコードの list にして返す。"""
+    # SQLite は先頭16バイトが決まっている。読む前に判定して理由を伝える。
+    with open(path, "rb") as fh:
+        head = fh.read(16)
+    if head.startswith(b"SQLite format 3"):
+        tool = SQLITE_HINTS.get(os.path.basename(path), "このエージェント")
+        die(
+            f"SQLite のデータベースです: {path}\n"
+            f"{tool} は会話を SQLite に保存するため、このスキルでは読めません。\n"
+            "テーブル構成を確認して、JSONL に書き出してから渡してください:\n"
+            f"  sqlite3 {path} .schema\n"
+            "（role と本文のカラム名が分かれば、数行の SQL で JSONL にできます）"
+        )
+
     raw = open(path, encoding="utf-8", errors="replace").read().strip()
     if not raw:
         die(f"ログが空です: {path}")
+
+    # Markdown 形式のログ（Aider など）は構造が取れない
+    if os.path.splitext(path)[1].lower() in (".md", ".markdown"):
+        die(
+            f"Markdown 形式のログです: {path}\n"
+            "役割の区切りが見出しの書き方に依存し、本文と混ざるため構造を取れません。\n"
+            "（Aider の .aider.chat.history.md など）"
+        )
 
     # まず JSONL として読む（1行1JSON）
     if "\n" in raw:
@@ -142,21 +179,39 @@ def normalize(rec):
     if inner is None and isinstance(rec.get("payload"), dict):
         inner = rec["payload"]
 
+    src = inner if inner is not None else rec
+
+    # ツール呼び出しが「独立したレコード」として並ぶ形式（Codex の function_call など）。
+    # 直前のAI発話に足したいので、role ではなく tool 種別として返す。
+    kind = str(src.get("type") or "").lower()
+    if kind in ("function_call", "tool_call", "tool_use", "local_shell_call", "custom_tool_call"):
+        name = src.get("name") or ""
+        return {
+            "role": "tool",
+            "texts": [],
+            "tools": 1,
+            "agents": 1 if name in ("Agent", "Task", "subagent") else 0,
+            "ts": str(rec.get("timestamp") or ""),
+        }
+    # 実行結果のレコードは数えない（呼び出し側で1回数えているため）
+    if kind in ("function_call_output", "tool_result", "custom_tool_call_output"):
+        return None
+
     # 役割は role が最優先。type は role が無いときだけの代用
     # （type:"message" のような入れ物の名前を役割と取り違えないため）
-    role = rec.get("role") or (inner or {}).get("role") or ""
+    role = rec.get("role") or src.get("role") or ""
     if not role:
-        role = (inner or {}).get("type") or rec.get("type") or ""
+        role = src.get("type") or rec.get("type") or ""
 
     role = str(role).lower()
     if role in ("human", "user", "input"):
         role = "user"
-    elif role in ("assistant", "ai", "model", "agent", "output"):
+    elif role in ("assistant", "ai", "model", "agent", "output", "gemini"):
         role = "assistant"
     else:
+        # developer / system / tool など、会話の当事者でないものは落とす
         return None
 
-    src = inner if inner is not None else rec
     content = src.get("content")
     if content is None:
         content = src.get("parts")           # Gemini 系
@@ -226,6 +281,8 @@ def candidates(all_agents=False):
         ):
             pass  # 実在チェックは glob 側に任せる
         for p in glob.glob(pat, recursive=True):
+            if os.path.basename(p) in DENY_BASENAMES:
+                continue
             try:
                 out.append((os.path.getmtime(p), p, name))
             except OSError:
