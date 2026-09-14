@@ -221,6 +221,18 @@ Claude Design の `.dc.html` 画面に、**採番チップ + 要素テーブル*
 
 対象プロジェクトに `tokens.css`（`--line` `--panel` `--ink-soft` など）が要る。
 
+### codex-imagegen
+
+Codex CLI の組み込み `image_gen` を Bash 経由で呼び、生成した PNG を指定の絶対パスに保存する。
+**OpenAI の API キーは要らない**（Codex 自身のサブスクリプション経由）。
+
+```bash
+codex exec --sandbox workspace-write --skip-git-repo-check \
+  '$imagegen <プロンプト>。/abs/path/out.png に保存してください。' < /dev/null
+```
+
+参照画像は `-i` で渡せる。1 回 30 秒〜2 分かかるので、呼ぶ側のタイムアウトを長めに取る。
+
 ## ライセンス
 
 MIT
