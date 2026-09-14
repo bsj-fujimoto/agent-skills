@@ -211,6 +211,16 @@ scripts/reply.sh <pr-number> <comment-id> <message>
 `gh pr comment` は PR 全体への issue comment しか投げられない。
 コード行に紐づくスレッドに返すには `in_reply_to` が要る、というのがこのスキルの理由。
 
+### claude-design-live-spec
+
+Claude Design の `.dc.html` 画面に、**採番チップ + 要素テーブル**の仕様書ページを足す。
+
+特徴は注釈の描き方。スクリーンショットへのヒューリスティックな当てはめではなく、
+**対象画面を iframe でライブ表示して実 DOM を `getBoundingClientRect()` で実測**する。
+そのため対象画面のレイアウトが変わっても、仕様書ページを再生成せずに追従する。
+
+対象プロジェクトに `tokens.css`（`--line` `--panel` `--ink-soft` など）が要る。
+
 ## ライセンス
 
 MIT

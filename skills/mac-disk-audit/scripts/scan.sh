@@ -93,8 +93,10 @@ else
 fi
 
 sec "10. 大きいファイル（Downloads / Desktop / Documents 直下）"
-find "$H/Downloads" "$H/Desktop" -type f -size +200M 2>/dev/null \
-  -exec ls -lh {} \; | awk '{print $5"\t"$9}' | sort -rh | head -20
+{ find "$H/Downloads" "$H/Desktop" -type f -size +200M 2>/dev/null -exec ls -lh {} \; ;
+  # Documents は深くなりがちなので深さを絞る（見出しが3つを謳っているため対象に含める）
+  find "$H/Documents" -maxdepth 4 -type f -size +200M 2>/dev/null -exec ls -lh {} \; ; } \
+  | awk '{print $5"\t"$9}' | sort -rh | head -20
 
 sec "11. .git が重いリポジトリ（200MB超）"
 for d in $(find "$H/Documents" -maxdepth 5 -type d -name .git -prune 2>/dev/null); do
@@ -108,6 +110,8 @@ du -sh "$H/Library/CloudStorage/"*/ 2>/dev/null | sort -rh | head -6
 
 sec "13. その他"
 tmutil listlocalsnapshots / 2>/dev/null | head -5
+# -n はドライラン（削除しない）。ただし brew 自身が ~/Library/Caches/Homebrew に
+# API キャッシュを書くことがある。このスキャン全体で唯一、書き込みが起きうる箇所。
 command -v brew >/dev/null 2>&1 && brew cleanup -n 2>/dev/null | tail -2
 
 sec "スキャン完了（読み取りのみ。何も変更していません）"

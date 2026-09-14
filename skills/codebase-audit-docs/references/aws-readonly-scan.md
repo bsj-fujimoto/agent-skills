@@ -17,7 +17,9 @@ for s in "ec2 describe-vpcs" "elbv2 describe-load-balancers" "autoscaling descri
  "cloudfront list-distributions" "route53 list-hosted-zones" "acm list-certificates" \
  "cloudwatch describe-alarms" "lambda list-functions" "sns list-topics" "sqs list-queues" \
  "sesv2 list-email-identities" "secretsmanager list-secrets" "iam list-users" \
- "ce get-cost-and-usage" ; do echo "== $s =="; aws $s 2>&1 | head -2; done
+ "ce get-cost-and-usage" ; do echo "== $s =="; eval "aws $s" 2>&1 | head -2; done
+# `aws $s` と書くと zsh / fish では単語分割されず 1 引数で渡り、全部 usage エラーになる。
+# 分割はシェル依存なので eval で明示する（$s の中身はこのリストのリテラルだけ）。
 ```
 ※ Cost Explorer(ce)や Performance Insights(pi)は権限外のことが多い。無ければ「実額はコード外・概算のみ」と明記。
 

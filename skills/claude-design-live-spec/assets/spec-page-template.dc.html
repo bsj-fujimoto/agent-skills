@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+.spec-wrap{max-width:1760px;margin:0 auto;padding:40px 32px 100px}
+.spec-crumb{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);margin-bottom:10px}
+.spec-h1{font-size:24px;font-weight:900;margin-bottom:6px}
+.spec-lede{font-size:13px;color:var(--ink-soft);max-width:820px;line-height:1.7;margin-bottom:16px}
+.spec-toolbar{display:flex;align-items:center;gap:28px;margin-bottom:14px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:12.5px;color:var(--ink-soft);flex-wrap:wrap}
+.spec-tool{display:flex;align-items:center;gap:10px}
+.spec-tool input[type=range]{width:150px;accent-color:var(--signal)}
+.spec-tool .val{font-family:var(--font-mono);color:var(--paper);min-width:34px}
+.spec-tool-check{display:flex;align-items:center;gap:7px;cursor:pointer}
+.spec-tool-check input{accent-color:var(--signal);width:15px;height:15px}
+.spec-columns{display:flex;align-items:flex-start;gap:0}
+.spec-col-frame{flex:0 0 auto;overflow:auto;max-height:calc(100vh - 40px)}
+.spec-divider{flex:0 0 12px;align-self:stretch;cursor:col-resize;position:relative;margin:0 2px}
+.spec-divider::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--line-strong);border-radius:2px;transition:background .12s ease}
+.spec-divider:hover::before,.spec-divider.dragging::before{background:var(--signal)}
+.spec-col-table{flex:1 1 auto;min-width:320px;max-height:calc(100vh - 40px);overflow:auto}
+@media (max-width:900px){.spec-columns{flex-direction:column}.spec-divider{display:none}.spec-col-frame{max-height:none;overflow:visible;width:100% !important}.spec-col-table{max-height:none;overflow:visible}}
+.spec-frame-outer{padding:28px;border:1px solid var(--line);border-radius:14px;background:var(--panel);display:inline-block}
+.spec-scale-box{overflow:hidden}
+.spec-frame-wrap{position:relative;background:var(--ink);border-radius:8px;overflow:visible;transform-origin:top left}
+.spec-iframe{border:none;display:block;background:var(--ink);border-radius:8px}
+.ann-layer{position:absolute;inset:0;pointer-events:none}
+.ann-layer.hidden{display:none}
+.ann{position:absolute;pointer-events:auto;text-decoration:none;display:block;cursor:pointer;transition:opacity .15s ease}
+.ann-layer.dimming .ann:not(.active){opacity:.2}
+.ann .box{position:absolute;inset:0;border:1.5px dashed var(--signal);border-radius:3px;background:rgba(124,224,196,0);opacity:0;transition:opacity .12s ease,background .12s ease}
+.ann .chip{position:absolute;left:0;top:0;transform:translate(-50%,-50%);width:21px;height:21px;border-radius:99px;background:var(--ember);color:#1C0D06;font-family:var(--font-mono);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(0,0,0,.55);z-index:2;transition:transform .12s ease,background .12s ease}
+.ann:hover .box,.ann.active .box{opacity:1;background:rgba(124,224,196,.24);border-color:var(--paper)}
+.ann:hover .chip,.ann.active .chip{transform:translate(-50%,-50%) scale(1.18);background:var(--signal);color:#062018}
+.spec-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:14px}
+.spec-table th,.spec-table td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;word-break:break-word}
+.spec-table th{color:var(--ink-soft);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+.spec-table td.n{font-family:var(--font-mono);color:var(--ember);font-weight:800;text-align:center;width:28px}
+.spec-table tr.hasbox{cursor:pointer}
+.spec-table tr.hasbox:hover,.spec-table tr.rowactive{background:rgba(124,224,196,.08)}
+.spec-table td.action{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)}
+.tchip{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.t-view{background:rgba(255,255,255,.06);color:var(--ink-soft)}
+.t-click{background:var(--signal-soft);color:var(--signal)}
+.t-input{background:rgba(255,255,255,.06);color:var(--paper-dim);border:1px dashed var(--line-strong)}
+.t-select{background:rgba(124,224,196,.10);color:var(--signal)}
+.t-toggle{background:var(--ember-soft);color:var(--ember)}
+.dyn{color:var(--signal)}
+.stat{color:var(--ink-faint)}
+.spec-note{font-size:12px;color:var(--ink-soft);margin-top:10px}
+</style>
+</helmet>
+<div class="spec-wrap">
+<div class="spec-crumb">__SCREEN_TITLE__ Spec — data-spec-id + iframe実測プロトタイプ</div>
+<h1 class="spec-h1">__SCREEN_TITLE__(実測版)</h1>
+<p class="spec-lede">下のiframeは<a href="./__TARGET_FILE__">__TARGET_FILE__</a>そのものをライブ表示しています。破線枠は実DOM要素(<code>[data-spec-id]</code>)を<code>getBoundingClientRect()</code>で実測して描画しているため、__TARGET_FILE__のレイアウトが変わっても再生成なしに追従します。左(画面)・右(表)はそれぞれ独立してスクロールでき、中央の境目をドラッグすると幅を調整できます(画面側は幅に合わせて20%〜100%で自動縮小/拡大)。</p>
+<div class="spec-toolbar">
+<label class="spec-tool">パディング
+<input type="range" min="0" max="32" step="1" value="{{ pad }}" onInput="{{ onPadChange }}" />
+<span class="val">{{ padLabel }}</span>
+</label>
+<label class="spec-tool-check">
+<input type="checkbox" checked="{{ showChips }}" onChange="{{ onToggleChips }}" />
+採番チップを表示
+</label>
+<span class="spec-tool">表示倍率: <span class="val">{{ scalePct }}</span></span>
+</div>
+<div class="spec-columns">
+<div class="spec-col-frame" id="specColFrame" style="{{ frameColStyle }}">
+<div class="spec-frame-outer">
+<div class="spec-scale-box" style="{{ scaleBoxStyle }}">
+<div class="spec-frame-wrap" id="frameWrap" style="{{ frameWrapStyle }}">
+<iframe class="spec-iframe" id="targetFrame" src="./__TARGET_FILE__" style="{{ iframeStyle }}"></iframe>
+<div class="{{ layerClass }}" id="annLayer">
+<sc-for list="{{ boxes }}" as="b" hint-placeholder-count="__ELEMENT_COUNT__">
+<a class="ann" data-n="{{ b.n }}" title="{{ b.title }}" style="{{ b.posStyle }}" onClick="{{ onAnnClick }}"><span class="box"></span><span class="chip">{{ b.n }}</span></a>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="spec-divider" id="specDivider"></div>
+<div class="spec-col-table">
+<p class="spec-note">検出済み要素: {{ boxCount }} / __ELEMENT_COUNT__</p>
+<table class="spec-table">
+<tr><th>#</th><th>要素</th><th>種別</th><th>動作</th><th>テキスト</th></tr>
+__SPEC_TABLE_ROWS__
+</table>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{}'>
+var SPEC_LABELS = __SPEC_LABELS_JS__;
+var NATURAL_W = __IFRAME_WIDTH__;
+var NATURAL_H = __IFRAME_HEIGHT__;
+class Component extends DCLogic {
+  componentDidMount() {
+    var self = this;
+    this._iframe = document.getElementById('targetFrame');
+    this._measure = function () { self.measure(); };
+    this._iframe.addEventListener('load', this._measure);
+    window.addEventListener('resize', this._measure);
+    this._poll = setInterval(this._measure, 1000);
+    this._col = document.querySelector('.spec-col-frame');
+    if (this._col) this._col.addEventListener('scroll', this._measure);
+
+    if (this.state.frameColWidthPx == null) {
+      var container = document.querySelector('.spec-columns');
+      var total = container ? container.getBoundingClientRect().width : 1400;
+      this.setState({ frameColWidthPx: Math.max(480, Math.round(total - 680)) });
+    }
+
+    var divider = document.getElementById('specDivider');
+    if (divider) {
+      var dragging = false, startX = 0, startW = 0;
+      var onMove = function (e) {
+        if (!dragging) return;
+        var container = document.querySelector('.spec-columns');
+        var totalW = container ? container.getBoundingClientRect().width : 1400;
+        var min = 360, max = Math.max(min, totalW - 340);
+        var w = Math.max(min, Math.min(max, startW + (e.clientX - startX)));
+        self.setState({ frameColWidthPx: w });
+        self.measure();
+      };
+      var onUp = function () {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      divider.addEventListener('mousedown', function (e) {
+        dragging = true;
+        startX = e.clientX;
+        var col = document.getElementById('specColFrame');
+        startW = col ? col.getBoundingClientRect().width : (self.state.frameColWidthPx || 760);
+        divider.classList.add('dragging');
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        e.preventDefault();
+      });
+    }
+
+    document.addEventListener('mouseover', function (e) {
+      var tr = e.target.closest ? e.target.closest('.specrow') : null;
+      if (tr) self.setActive(tr.getAttribute('data-n'));
+      var ann = e.target.closest ? e.target.closest('.ann') : null;
+      if (ann) self.setActive(ann.getAttribute('data-n'));
+    });
+    document.addEventListener('mouseout', function (e) {
+      var tr = e.target.closest ? e.target.closest('.specrow') : null;
+      if (tr) self.setActive(null);
+      var ann = e.target.closest ? e.target.closest('.ann') : null;
+      if (ann) self.setActive(null);
+    });
+    this.measure(12);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._measure);
+    if (this._poll) clearInterval(this._poll);
+    if (this._col) this._col.removeEventListener('scroll', this._measure);
+  }
+  setActive(n) {
+    var layer = document.getElementById('annLayer');
+    document.querySelectorAll('.ann').forEach(function (a) {
+      a.classList.toggle('active', !!n && a.getAttribute('data-n') === n);
+    });
+    if (layer) layer.classList.toggle('dimming', !!n);
+  }
+  onPadChange(e) {
+    var v = parseInt(e.target.value, 10);
+    this.measure(v);
+  }
+  onToggleChips(e) {
+    this.setState({ showChips: e.target.checked });
+  }
+  measure(padOverride) {
+    try {
+      var pad = padOverride != null ? padOverride : (this.state.pad == null ? 12 : this.state.pad);
+      var idoc = this._iframe.contentDocument;
+      if (!idoc || !idoc.body) return;
+      var wrapRect = document.getElementById('frameWrap').getBoundingClientRect();
+      var frameRect = this._iframe.getBoundingClientRect();
+      var offX = frameRect.left - wrapRect.left;
+      var offY = frameRect.top - wrapRect.top;
+      var seen = {};
+      var boxes = [];
+      idoc.querySelectorAll('[data-spec-id]').forEach(function (el) {
+        var n = el.getAttribute('data-spec-id');
+        if (seen[n]) return;
+        seen[n] = true;
+        var r = el.getBoundingClientRect();
+        boxes.push({
+          n: n,
+          title: SPEC_LABELS[n] || n,
+          posStyle: 'left:' + (r.left + offX - pad) + 'px;top:' + (r.top + offY - pad) + 'px;width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px'
+        });
+      });
+      boxes.sort(function (a, b) { return parseInt(a.n, 10) - parseInt(b.n, 10); });
+      this.setState({ boxes: boxes, boxCount: boxes.length, pad: pad });
+    } catch (err) {}
+  }
+  onAnnClick(e, ctx) {
+    e.preventDefault();
+    var n = e.currentTarget.getAttribute('data-n');
+    var row = document.querySelector('.specrow[data-n="' + n + '"]');
+    if (!row) return;
+    var col = document.querySelector('.spec-col-table');
+    if (col && row) {
+      var target = row.offsetTop - 40;
+      col.scrollTo({ top: target, behavior: 'smooth' });
+    }
+    row.classList.add('rowactive');
+    setTimeout(function () { row.classList.remove('rowactive'); }, 1400);
+  }
+  renderVals() {
+    var pad = this.state.pad == null ? 12 : this.state.pad;
+    var showChips = this.state.showChips == null ? true : this.state.showChips;
+    var frameColWidthPx = this.state.frameColWidthPx || 760;
+    var innerAvail = Math.max(120, frameColWidthPx - 56);
+    var scale = Math.min(1, Math.max(0.2, innerAvail / NATURAL_W));
+    var scaledW = Math.round(NATURAL_W * scale);
+    var scaledH = Math.round(NATURAL_H * scale);
+    return {
+      boxes: this.state.boxes || [],
+      boxCount: this.state.boxCount || 0,
+      pad: pad,
+      padLabel: pad + 'px',
+      showChips: showChips,
+      layerClass: 'ann-layer' + (showChips ? '' : ' hidden'),
+      frameColStyle: 'width:' + frameColWidthPx + 'px',
+      scaleBoxStyle: 'width:' + scaledW + 'px;height:' + scaledH + 'px',
+      frameWrapStyle: 'width:' + NATURAL_W + 'px;height:' + NATURAL_H + 'px;transform:scale(' + scale + ')',
+      iframeStyle: 'width:' + NATURAL_W + 'px;height:' + NATURAL_H + 'px',
+      scalePct: Math.round(scale * 100) + '%',
+      onAnnClick: this.onAnnClick.bind(this),
+      onPadChange: this.onPadChange.bind(this),
+      onToggleChips: this.onToggleChips.bind(this)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -35,6 +35,10 @@ NOISE_PATTERNS = (
     re.compile(r"^\s*<task-notification>", re.S),
     re.compile(r"^\s*<system-reminder>", re.S),
     re.compile(r"^\s*This session is being continued from a previous conversation", re.S),
+    # IDE がファイルを開いた／選択しただけの通知。人は何も打っていないのに
+    # 発言として 1 ターン計上されてしまう
+    re.compile(r"^\s*<ide_opened_file>", re.S),
+    re.compile(r"^\s*<ide_selection>", re.S),
 )
 
 
