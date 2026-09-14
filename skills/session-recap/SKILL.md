@@ -35,11 +35,12 @@ license: MIT
 **パスを決め打ちにせず**、最初に一度だけ実体の場所を求めておく。
 
 ```bash
-SKILL_DIR=$(dirname "$(find ~/.claude/skills ~/.agents/skills .claude/skills .agents/skills \
+SKILL_DIR=$(dirname "$(find .claude/skills .agents/skills ~/.claude/skills ~/.agents/skills \
   -name SKILL.md -path '*session-recap*' 2>/dev/null | head -1)")
 echo "$SKILL_DIR"
 ```
 
+プロジェクト配下を先に探し、無ければグローバルに落とす。
 シンボリックリンクで入っていることもあるが、`find` は実体まで辿れるのでそのまま使える。
 以降の `$SKILL_DIR` はこの値。見つからなければ、このスキルが置かれている
 ディレクトリを直接指定する。
